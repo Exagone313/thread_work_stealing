@@ -1,4 +1,3 @@
-//#include "task.h"
 #include "sched.h"
 
 struct scheduler

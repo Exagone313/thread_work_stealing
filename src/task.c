@@ -1,0 +1,46 @@
+#include <stdlib.h>
+#include "task.h"
+
+void s(void){}
+
+static void *task_thread(void *arg)
+{
+	t_scheduler *sched;
+	void *storage;
+	t_task_callback *cb;
+
+	sched = (t_scheduler *)arg;
+	storage = sched->storage_init(sched->state);
+	cb = sched->get_task(sched->state, storage);
+	cb->f(cb->closure, sched);
+	// TODO while (1) get_task, until..?
+	// TODO check if quit == 1 (lock?)
+	pthread_exit(NULL);
+}
+
+void task_init(t_scheduler *sched, int nthreads,
+		t_strategy_storage_init storage_init,
+		t_strategy_get_task get_task,
+		void *state)
+{
+	int i;
+
+	if (!(sched->thread_list = malloc(sizeof(*sched->thread_list) * nthreads)))
+	{
+		sched->quit = 1;
+		return;
+	}
+	for (i = 0; i < nthreads; i++)
+		pthread_create(&(sched->thread_list[i]), NULL, task_thread, NULL);
+	sched->quit = 0;
+}
+
+void task_wait(t_scheduler *sched)
+{
+	int i;
+
+	for (i = 0; i < sched->thread_count; i++) // FIXME if thread not started
+	{
+		pthread_join(sched->thread_list[i], NULL);
+	}
+}
