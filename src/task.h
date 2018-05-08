@@ -4,11 +4,6 @@
 # include <pthread.h>
 # include "sched.h"
 
-/* Initialize storage for current thread
- * return NULL if memory allocation failed
- */
-typedef void *(*t_strategy_storage_init)(void *state);
-
 typedef struct s_task_callback
 {
 	taskfunc f;
@@ -17,12 +12,17 @@ typedef struct s_task_callback
 
 typedef struct scheduler t_scheduler;
 
+/* Initialize storage for current thread
+ * return NULL if memory allocation failed
+ */
+typedef void *(*t_strategy_storage_init)(t_scheduler *sched);
+
 /* Get a task to execute
  * return NULL if no task is available
  * Note: each strategy_storage is in a variable in thread
  */
-typedef t_task_callback *(*t_strategy_get_task)(t_scheduler *sched,
-		void *storage);
+typedef int (*t_strategy_get_task)(t_task_callback *cb,
+		t_scheduler *sched, void *storage);
 
 struct scheduler
 {
@@ -32,6 +32,8 @@ struct scheduler
 	t_strategy_get_task get_task;
 	void *state;
 	int quit;
+	/*int sleep_time;
+	pthread_spinlock_t sleep_lock;*/
 };
 
 void task_init(t_scheduler *sched, int nthreads,
