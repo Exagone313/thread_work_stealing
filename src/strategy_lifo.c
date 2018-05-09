@@ -60,7 +60,7 @@ static int strategy_get_task(t_task_callback *cb, t_scheduler *sched,
 		state->thread_sleeping[storage->id] = 1;
 		for (i = 0; i < sched->thread_count; i++)
 		{
-			if (state->thread_sleeping[i])
+			if (!state->thread_sleeping[i])
 				break;
 		}
 		if (i == sched->thread_count) // all threads sleeping
@@ -75,6 +75,7 @@ static int strategy_get_task(t_task_callback *cb, t_scheduler *sched,
 	{
 		state->task_count--;
 		memcpy(cb, &(state->task_list[state->task_count]), sizeof(*cb));
+		state->thread_sleeping[storage->id] = 0;
 		r = 0;
 	}
 	pthread_mutex_unlock(&(state->mutex));
