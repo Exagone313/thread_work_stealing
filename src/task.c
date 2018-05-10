@@ -19,7 +19,7 @@ static void *task_thread(void *arg)
 			if (r == 1) // quit
 				break;
 			// TODO better wait
-			sleep(1);
+			//sleep(1);
 		}
 		else
 			cb.f(cb.closure, sched);
