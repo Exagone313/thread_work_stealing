@@ -4,7 +4,7 @@ WSTEAL_NAME ?= scheduler_wsteal.a
 SERIAL_NAME ?= scheduler_serial.a
 
 COMMON_SRC := \
-	scheduler.c
+	task.c
 
 LIFO_SRC := \
 	strategy_lifo.c

@@ -1,34 +1,6 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include "task.h"
-
-/* FIXME what if we'd wait for a fixed time
-and send signals to sleeping threads?
-=> pthread_kill, pthread_self..?
-OR cond var?
-*/
-
-/*
-static int task_sleep_time(t_scheduler *sched, int reset)
-{
-	int r;
-
-	pthread_spin_lock(&(sched->sleep_lock));
-	if (reset)
-	{
-		sched->sleep_time = 1;
-		r = 0;
-	}
-	else
-		r = sched->sleep_time++;
-	pthread_spin_unlock(&(sched->sleep_lock));
-	return r;
-}
-
-static void task_sleep(t_scheduler *sched)
-{
-	(void)sched;
-}
-*/
 
 static void *task_thread(void *arg)
 {
@@ -42,11 +14,12 @@ static void *task_thread(void *arg)
 		pthread_exit(NULL);
 	while (1)
 	{
-		if ((r = sched->get_task(&cb, sched->state, storage)))
+		if ((r = sched->get_task(&cb, sched, storage)))
 		{
 			if (r == 1) // quit
 				break;
-			// TODO wait
+			// TODO better wait
+			sleep(1);
 		}
 		else
 			cb.f(cb.closure, sched);
@@ -60,15 +33,17 @@ void task_init(t_scheduler *sched, int nthreads,
 		void *state)
 {
 	int i;
-	int r;
 
-	sched->quit = 0;
 	if (!(sched->thread_list = malloc(sizeof(*sched->thread_list) * nthreads)))
 	{
 		sched->quit = 1;
 		return;
 	}
-	/*if (pthread_spin_init(&(sched->sleep_lock), PTHREAD_PROCESS_PRIVATE))
+	sched->quit = 0;
+	sched->storage_init = storage_init;
+	sched->get_task = get_task;
+	sched->state = state;
+	/*if (pthread_spin_init(&sched->sleep_lock, PTHREAD_PROCESS_PRIVATE))
 	{
 		free(sched->thread_list);
 		sched->quit = 1;
@@ -76,8 +51,8 @@ void task_init(t_scheduler *sched, int nthreads,
 	}*/
 	for (i = 0; i < nthreads; i++)
 	{
-		if (pthread_create(&(sched->thread_list[i]), NULL,
-					task_thread, NULL))
+		if (pthread_create(&sched->thread_list[i], NULL,
+					task_thread, sched))
 		{
 			sched->quit = 1;
 			break;
@@ -95,5 +70,5 @@ void task_wait(t_scheduler *sched)
 		pthread_join(sched->thread_list[i], NULL); // TODO get return value (error)
 	}
 	free(sched->thread_list);
-	//pthread_spin_destroy(&(sched->sleep_lock));
+	//pthread_spin_destroy(&sched->sleep_lock);
 }

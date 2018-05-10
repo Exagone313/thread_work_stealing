@@ -32,8 +32,6 @@ struct scheduler
 	t_strategy_get_task get_task;
 	void *state;
 	int quit;
-	/*int sleep_time;
-	pthread_spinlock_t sleep_lock;*/
 };
 
 void task_init(t_scheduler *sched, int nthreads,
