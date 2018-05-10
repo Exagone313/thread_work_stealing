@@ -144,7 +144,8 @@ int sched_init(int nthreads, int qlen, taskfunc f, void *closure)
 	else
 		r = 0;
 	pthread_mutex_unlock(&state.mutex);
-	task_wait(&sched);
+	if (task_wait(&sched))
+		r = -1;
 	pthread_mutex_destroy(&state.mutex);
 	pthread_cond_destroy(&state.cond);
 	free(state.task_list);

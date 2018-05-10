@@ -45,6 +45,6 @@ void task_init(t_scheduler *sched, int nthreads,
 		t_strategy_get_task get_task,
 		void *state);
 
-void task_wait(t_scheduler *sched);
+int task_wait(t_scheduler *sched);
 
 #endif

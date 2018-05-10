@@ -11,15 +11,13 @@ static void *task_thread(void *arg)
 
 	sched = (t_scheduler *)arg;
 	if(!(storage = sched->storage_init(sched)))
-		pthread_exit(NULL);
+		pthread_exit((void *)1);
 	while (1)
 	{
 		if ((r = sched->get_task(&cb, sched, storage)))
 		{
 			if (r == 1) // quit
 				break;
-			// TODO better wait
-			//sleep(1);
 		}
 		else
 			cb.f(cb.closure, sched);
@@ -56,11 +54,19 @@ void task_init(t_scheduler *sched, int nthreads,
 	sched->thread_count = i;
 }
 
-void task_wait(t_scheduler *sched)
+int task_wait(t_scheduler *sched)
 {
 	int i;
+	int r;
+	void *v;
 
+	r = 0;
 	for (i = 0; i < sched->thread_count; i++)
-		pthread_join(sched->thread_list[i].thread, NULL); // TODO get return value (error)
+	{
+		pthread_join(sched->thread_list[i].thread, &v);
+		if (v)
+			r = -1;
+	}
 	free(sched->thread_list);
+	return r;
 }
