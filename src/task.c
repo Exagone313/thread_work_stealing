@@ -34,7 +34,8 @@ void task_init(t_scheduler *sched, int nthreads,
 {
 	int i;
 
-	if (!(sched->thread_list = malloc(sizeof(*sched->thread_list) * nthreads)))
+	if (!(sched->thread_list = calloc(1,
+					sizeof(*sched->thread_list) * nthreads)))
 	{
 		sched->quit = 1;
 		return;
@@ -43,15 +44,9 @@ void task_init(t_scheduler *sched, int nthreads,
 	sched->storage_init = storage_init;
 	sched->get_task = get_task;
 	sched->state = state;
-	/*if (pthread_spin_init(&sched->sleep_lock, PTHREAD_PROCESS_PRIVATE))
-	{
-		free(sched->thread_list);
-		sched->quit = 1;
-		return;
-	}*/
 	for (i = 0; i < nthreads; i++)
 	{
-		if (pthread_create(&sched->thread_list[i], NULL,
+		if (pthread_create(&sched->thread_list[i].thread, NULL,
 					task_thread, sched))
 		{
 			sched->quit = 1;
@@ -66,9 +61,6 @@ void task_wait(t_scheduler *sched)
 	int i;
 
 	for (i = 0; i < sched->thread_count; i++)
-	{
-		pthread_join(sched->thread_list[i], NULL); // TODO get return value (error)
-	}
+		pthread_join(sched->thread_list[i].thread, NULL); // TODO get return value (error)
 	free(sched->thread_list);
-	//pthread_spin_destroy(&sched->sleep_lock);
 }

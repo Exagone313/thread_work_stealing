@@ -24,9 +24,15 @@ typedef void *(*t_strategy_storage_init)(t_scheduler *sched);
 typedef int (*t_strategy_get_task)(t_task_callback *cb,
 		t_scheduler *sched, void *storage);
 
+struct s_thread_unit
+{
+	pthread_t thread;
+	int sleeping;
+};
+
 struct scheduler
 {
-	pthread_t *thread_list;
+	struct s_thread_unit *thread_list;
 	int thread_count;
 	t_strategy_storage_init storage_init;
 	t_strategy_get_task get_task;

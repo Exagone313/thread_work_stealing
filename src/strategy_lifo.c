@@ -9,33 +9,12 @@ typedef struct s_state
 	t_task_callback *task_list;
 	int task_count;
 	int task_size;
-	int thread_id;
-	int *thread_sleeping;
 } t_state;
-
-typedef struct s_storage
-{
-	int id;
-} t_storage;
 
 static void *strategy_storage_init(t_scheduler *sched)
 {
-	t_state *state;
-	t_storage *r;
-
-	state = (t_state *)sched->state;
-	pthread_mutex_lock(&state->mutex);
-	if (sched->quit)
-		r = NULL;
-	else if (!(r = malloc(sizeof(*r))))
-	{
-		sched->quit = 1;
-		r = NULL;
-	}
-	else
-		r->id = state->thread_id++;
-	pthread_mutex_unlock(&state->mutex);
-	return r;
+	(void)sched;
+	return (void *)1;
 }
 
 static int strategy_get_task(t_task_callback *cb, t_scheduler *sched,
@@ -44,19 +23,24 @@ static int strategy_get_task(t_task_callback *cb, t_scheduler *sched,
 	t_state *state;
 	int r;
 	int i;
-	t_storage *storage;
 
+	(void)storage_ptr;
 	state = (t_state *)sched->state;
-	storage = (t_storage *)storage_ptr;
 	pthread_mutex_lock(&state->mutex);
 	if (sched->quit)
 		r = 1;
 	else if (state->task_count == 0)
 	{
-		state->thread_sleeping[storage->id] = 1;
 		for (i = 0; i < sched->thread_count; i++)
 		{
-			if (!state->thread_sleeping[i])
+			if (sched->thread_list[i].thread == pthread_self())
+				break;
+		}
+		// could assert i < sched->thread_count
+		sched->thread_list[i].sleeping = 1;
+		for (i = 0; i < sched->thread_count; i++) // XXX
+		{
+			if (!sched->thread_list[i].sleeping)
 				break;
 		}
 		if (i == sched->thread_count) // all threads sleeping
@@ -71,7 +55,13 @@ static int strategy_get_task(t_task_callback *cb, t_scheduler *sched,
 	{
 		state->task_count--;
 		memcpy(cb, &(state->task_list[state->task_count]), sizeof(*cb));
-		state->thread_sleeping[storage->id] = 0;
+		for (i = 0; i < sched->thread_count; i++)
+		{
+			if (sched->thread_list[i].thread == pthread_self())
+				break;
+		}
+		// could assert i < sched->thread_count
+		sched->thread_list[i].sleeping = 0;
 		r = 0;
 	}
 	pthread_mutex_unlock(&state->mutex);
@@ -96,11 +86,9 @@ int sched_init(int nthreads, int qlen, taskfunc f, void *closure)
 	pthread_mutex_lock(&state.mutex);
 	state.task_list[0].f = f;
 	state.task_list[0].closure = closure;
-	state.thread_id = 0;
 	task_init(&sched, nthreads,
 			strategy_storage_init, strategy_get_task, &state);
-	if (sched.quit || !(state.thread_sleeping = calloc(1,
-					sizeof(*state.thread_sleeping))))
+	if (sched.quit)
 		r = -1;
 	else
 		r = 0;
