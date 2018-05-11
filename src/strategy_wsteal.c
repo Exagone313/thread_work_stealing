@@ -85,11 +85,13 @@ typedef struct s_state
 /* top */
 static int get_task(t_task_callback *cb, t_dequeue *dequeue, int task_size)
 {
+	printf("get_task task_count=%d\n", dequeue->task_count);fflush(stdout);
 	if (dequeue->task_count == 0) // empty
 		return -1;
 	dequeue->task_count--;
 	memcpy(cb, &dequeue->task_list[(dequeue->task_start + dequeue->task_count)
 			% task_size], sizeof(*cb));
+	//printf(">> get_task copied f=%p\n", cb->f);fflush(stdout);
 	return 0;
 }
 
@@ -110,6 +112,8 @@ static int add_task(t_task_callback *cb, t_dequeue *dequeue, int task_size)
 		return -1;
 	memcpy(&dequeue->task_list[(dequeue->task_start + dequeue->task_count)
 			% task_size], cb, sizeof(*cb));
+	printf("<< add_task dq=%p s=%d id=%d l_before=%d\n", dequeue, dequeue->task_start,
+			(dequeue->task_start + dequeue->task_count) % task_size, dequeue->task_count);fflush(stdout);
 	dequeue->task_count++;
 	return 0;
 }
@@ -142,7 +146,8 @@ static int strategy_get_task(t_task_callback *cb, t_scheduler *sched,
 	int r;
 	int i;
 	int s;
-	int max;
+	int j;
+	//int max;
 	int sleeping;
 
 	dequeue = (t_dequeue *)storage_ptr;
@@ -158,6 +163,7 @@ static int strategy_get_task(t_task_callback *cb, t_scheduler *sched,
 	if (r)
 	{
 		pthread_mutex_lock(&state->mutex);
+		printf("lock state mutex %ld\n", dequeue->unit->thread);fflush(stdout);
 		s = dequeue->last_stolen_dequeue >= 0 ? dequeue->last_stolen_dequeue
 			: (int)((dequeue - state->dequeue) / sizeof(*dequeue)) + 1;
 		while (1)
@@ -169,46 +175,73 @@ static int strategy_get_task(t_task_callback *cb, t_scheduler *sched,
 			}
 			else
 			{
-				max = (s + sched->thread_count) % sched->thread_count;
+				//max = (s + sched->thread_count) % sched->thread_count;
 				sleeping = 1;
-				for (i = s % sched->thread_count; i != max;
-						i = (i + 1) % sched->thread_count)
+				//printf("for max=%d\n", max);fflush(stdout);
+				/*for (i = s % sched->thread_count; i != max;
+						i = (i + 1) % sched->thread_count)*/
+				for (i = 0; i < sched->thread_count; i++)
 				{
-					if (&state->dequeue[i] != dequeue) // not current thread
+					j = (i + s) % sched->thread_count;
+					printf("for i=%d j=%d\n", i, j);fflush(stdout);
+					if (&state->dequeue[j] != dequeue) // not current thread
 					{
-						pthread_mutex_lock(&state->dequeue[i].mutex);
-						if (steal_task(cb, &state->dequeue[i],
+						printf("test dq %d\n", j);fflush(stdout);
+						pthread_mutex_lock(&state->dequeue[j].mutex);
+						printf("lockED dq %d: start=%d, count=%d\n", j,
+								state->dequeue[j].task_start,
+								state->dequeue[j].task_count);fflush(stdout);
+						if (steal_task(cb, &state->dequeue[j],
 									state->task_size) == 0)
+						{
+							printf("STOLEN TASK in dq %d, f=%p\n", j, cb->f);fflush(stdout);
+							pthread_mutex_unlock(&state->dequeue[j].mutex);
+							printf("unlockED stolen dq %d\n", j);fflush(stdout);
 							break;
-						// TODO check sleeping????
-						if (state->dequeue[i].unit->sleeping)
+						}
+						printf("no stolen task in dq %d\n", j);fflush(stdout);
+						if (state->dequeue[j].unit
+								&& state->dequeue[j].unit->sleeping)
 							sleeping++;
-						pthread_mutex_unlock(&state->dequeue[i].mutex);
+						printf("unlock dq %d\n", j);fflush(stdout);
+						pthread_mutex_unlock(&state->dequeue[j].mutex);
+						printf("unlockED dq %d\n", j);fflush(stdout);
 					}
 				}
-				if (i != max) // got a task
+				printf("for end i=%d (j=%d)\n", i, j);fflush(stdout);
+				//if (i != max) // got a task
+				if (i < sched->thread_count) // got a task
 				{
+					printf("STOLEN TASK (after) in dq %d, f=%p\n", j, cb->f);fflush(stdout);
 					r = 0;
-					dequeue->last_stolen_dequeue = i;
+					dequeue->last_stolen_dequeue = j; // XXX i
 					break;
 				}
 				if (sleeping == sched->thread_count)
 				{
 					sched->quit = 1;
 					r = 1;
+					pthread_cond_broadcast(&state->cond);
 					break;
 				}
 				// TODO set + check sleeping???
 				dequeue->unit->sleeping = 1;
 				// FIXME not supposed to lock on dequeue mutex + cond to be signaled?
+				printf("state cond wait %ld\n", dequeue->unit->thread);fflush(stdout);
 				pthread_cond_wait(&state->cond, &state->mutex);
+				printf("state cond waitED %ld\n", dequeue->unit->thread);fflush(stdout);
 				s = state->dequeue_signaled;
 			}
 		}
 		pthread_mutex_unlock(&state->mutex);
 		//pthread_mutex_lock(&dequeue->mutex);
 	}
+	else
+	{
+		printf("got task f=%p\n", cb->f);fflush(stdout);
+	}
 	//pthread_mutex_unlock(&dequeue->mutex);
+	printf(">> r=%d f=%p\n", r, cb->f);fflush(stdout);
 	return r;
 }
 
@@ -234,8 +267,10 @@ int sched_init(int nthreads, int qlen, taskfunc f, void *closure)
 	state.mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 	state.cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 	state.task_size = qlen;
+	state.thread_id = 0;
 	state.initial_callback.f = f;
 	state.initial_callback.closure = closure;
+	state.dequeue_signaled = 0;
 	for (i = 0; i < nthreads; i++)
 	{
 		state.dequeue[i].task_list = &state.task_list_memory[i * qlen];
@@ -287,6 +322,7 @@ int sched_spawn(taskfunc f, void *closure, struct scheduler *s)
 	pthread_mutex_unlock(&dequeue->mutex);
 	pthread_mutex_lock(&state->mutex);
 	state->dequeue_signaled = i;
+	printf("dq sign=%d\n", i);fflush(stdout);
 	pthread_cond_signal(&state->cond);
 	pthread_mutex_unlock(&state->mutex);
 	return 0;

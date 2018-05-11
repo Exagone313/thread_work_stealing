@@ -3,6 +3,7 @@
 
 # include <pthread.h>
 # include "sched.h"
+#include<stdio.h>//XXX
 
 typedef struct s_task_callback
 {

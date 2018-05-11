@@ -9,6 +9,7 @@ static void *task_thread(void *arg)
 	int r;
 
 	unit = (t_thread_unit *)arg;
+	printf("start %ld\n", unit->thread);fflush(stdout);
 	if(!(unit->storage = unit->sched->storage_init(unit)))
 		pthread_exit((void *)1);
 	while (1)
@@ -19,8 +20,15 @@ static void *task_thread(void *arg)
 				break;
 		}
 		else
+		{
+			if (!cb.f)
+			{
+				printf("function NULL!\n");fflush(stdout);abort();
+			}
 			cb.f(cb.closure, unit->sched);
+		}
 	}
+	printf("exit %ld\n", unit->thread);fflush(stdout);
 	pthread_exit(NULL);
 }
 
