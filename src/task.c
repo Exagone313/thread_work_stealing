@@ -4,23 +4,22 @@
 
 static void *task_thread(void *arg)
 {
-	t_scheduler *sched;
-	void *storage;
+	t_thread_unit *unit;
 	t_task_callback cb;
 	int r;
 
-	sched = (t_scheduler *)arg;
-	if(!(storage = sched->storage_init(sched)))
+	unit = (t_thread_unit *)arg;
+	if(!(unit->storage = unit->sched->storage_init(unit)))
 		pthread_exit((void *)1);
 	while (1)
 	{
-		if ((r = sched->get_task(&cb, sched, storage)))
+		if ((r = unit->sched->get_task(&cb, unit->sched, unit->storage)))
 		{
 			if (r == 1) // quit
 				break;
 		}
 		else
-			cb.f(cb.closure, sched);
+			cb.f(cb.closure, unit->sched);
 	}
 	pthread_exit(NULL);
 }
@@ -44,8 +43,9 @@ void task_init(t_scheduler *sched, int nthreads,
 	sched->state = state;
 	for (i = 0; i < nthreads; i++)
 	{
+		sched->thread_list[i].sched = sched;
 		if (pthread_create(&sched->thread_list[i].thread, NULL,
-					task_thread, sched))
+					task_thread, &sched->thread_list[i]))
 		{
 			sched->quit = 1;
 			break;

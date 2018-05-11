@@ -11,11 +11,12 @@ typedef struct s_task_callback
 } t_task_callback;
 
 typedef struct scheduler t_scheduler;
+typedef struct s_thread_unit t_thread_unit;
 
 /* Initialize storage for current thread
  * return NULL if memory allocation failed
  */
-typedef void *(*t_strategy_storage_init)(t_scheduler *sched);
+typedef void *(*t_strategy_storage_init)(t_thread_unit *unit);
 
 /* Get a task to execute
  * return NULL if no task is available
@@ -24,11 +25,13 @@ typedef void *(*t_strategy_storage_init)(t_scheduler *sched);
 typedef int (*t_strategy_get_task)(t_task_callback *cb,
 		t_scheduler *sched, void *storage);
 
-struct s_thread_unit
+typedef struct s_thread_unit
 {
+	struct scheduler *sched;
 	pthread_t thread;
 	int sleeping;
-};
+	void *storage;
+} t_thread_unit;
 
 struct scheduler
 {

@@ -12,9 +12,9 @@ typedef struct s_state
 	int task_size;
 } t_state;
 
-static void *strategy_storage_init(t_scheduler *sched)
+static void *strategy_storage_init(t_thread_unit *unit)
 {
-	(void)sched;
+	(void)unit;
 	return (void *)1;
 }
 
