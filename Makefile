@@ -25,7 +25,7 @@ SERIAL_OBJ := $(addprefix $(SRCDIR)/,$(SERIAL_SRC:.c=.o))
 CFLAGS += -MMD -MP -I$(INCLUDEDIR)
 CFLAGS += -O3
 
-.PHONY: all clean fclean
+.PHONY: all clean fclean test
 
 all: $(LIFO_NAME) $(WSTEAL_NAME) $(SERIAL_NAME)
 
@@ -43,6 +43,9 @@ $(LIFO_NAME) $(WSTEAL_NAME) $(SERIAL_NAME):
 -include $(WSTEAL_OBJ:.o=.d)
 -include $(SERIAL_OBJ:.o=.d)
 
+test: all
+	$(MAKE) -C test
+
 clean:
 	$(RM) $(COMMON_OBJ) $(COMMON_OBJ:.o=.d)
 	$(RM) $(LIFO_OBJ) $(LIFO_OBJ:.o=.d)
@@ -52,3 +55,4 @@ clean:
 fclean:
 	$(MAKE) clean
 	$(RM) $(LIFO_NAME) $(WSTEAL_NAME) $(SERIAL_NAME)
+	$(MAKE) -C test fclean

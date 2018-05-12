@@ -1,1 +1,4 @@
 *.[ado]
+/test/*.serial
+/test/*.lifo
+/test/*.wsteal
