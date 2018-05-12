@@ -23,6 +23,7 @@ WSTEAL_OBJ := $(addprefix $(SRCDIR)/,$(WSTEAL_SRC:.c=.o))
 SERIAL_OBJ := $(addprefix $(SRCDIR)/,$(SERIAL_SRC:.c=.o))
 
 CFLAGS += -MMD -MP -I$(INCLUDEDIR)
+CFLAGS += -O3
 
 .PHONY: all clean fclean
 
