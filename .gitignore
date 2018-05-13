@@ -1,4 +1,4 @@
 *.[ado]
-/test/*.serial
-/test/*.lifo
-/test/*.wsteal
+/test/*.serial*
+/test/*.lifo*
+/test/*.wsteal*
