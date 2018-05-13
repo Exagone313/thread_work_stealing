@@ -22,6 +22,9 @@ static void *task_thread(void *arg)
 			cb.f(cb.closure, unit->sched);
 	}
 	pthread_exit(NULL);
+#if __WIN32
+	return NULL;
+#endif
 }
 
 void task_init(t_scheduler *sched, int nthreads,

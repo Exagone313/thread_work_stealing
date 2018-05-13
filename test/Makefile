@@ -1,11 +1,12 @@
 CFLAGS ?= -Wall -Wextra
+EXT ?=
 
 TESTS := \
 	quicksort
 
-SERIAL := $(addsuffix .serial,$(TESTS))
-LIFO := $(addsuffix .lifo,$(TESTS))
-WSTEAL := $(addsuffix .wsteal,$(TESTS))
+SERIAL := $(addsuffix .serial$(EXT),$(TESTS))
+LIFO := $(addsuffix .lifo$(EXT),$(TESTS))
+WSTEAL := $(addsuffix .wsteal$(EXT),$(TESTS))
 
 INCLUDEDIR := ../include
 
@@ -16,13 +17,13 @@ CFLAGS += -O3
 
 all: $(SERIAL) $(LIFO) $(WSTEAL)
 
-%.serial: %.o ../scheduler_serial.a
+%.serial$(EXT): %.o ../scheduler_serial.a
 	$(CC) $(CFLAGS) -o $@ -lpthread $^
 
-%.lifo: %.o ../scheduler_lifo.a
+%.lifo$(EXT): %.o ../scheduler_lifo.a
 	$(CC) $(CFLAGS) -o $@ -lpthread $^
 
-%.wsteal: %.o ../scheduler_wsteal.a
+%.wsteal$(EXT): %.o ../scheduler_wsteal.a
 	$(CC) $(CFLAGS) -o $@ -lpthread $^
 
 clean:

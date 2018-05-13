@@ -93,7 +93,11 @@ main(int argc, char **argv)
 {
 	int *a;
 	struct timespec begin, end;
+#ifndef _WIN32
 	long double delay = 0.L;
+#else
+	double delay = 0.L;
+#endif
 	int rc;
 	int n = 10 * 1024 * 1024;
 	int nthreads = -1;
@@ -156,7 +160,11 @@ main(int argc, char **argv)
 			assert(a[i] <= a[i + 1]);
 		}
 	}
+#ifndef _WIN32
 	printf("%Lg\n", delay);
+#else
+	printf("%lg\n", delay);
+#endif
 
 	free(a);
 	return 0;
