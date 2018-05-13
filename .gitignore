@@ -3,3 +3,4 @@
 /test/*.lifo*
 /test/*.wsteal*
 /test/stats.png
+/test/stats.pdf

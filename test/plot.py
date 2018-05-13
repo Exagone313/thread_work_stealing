@@ -47,7 +47,7 @@ data = {
   },
 }
 
-plt.figure(figsize=(16.0, 12.0))
+plt.figure(figsize=(14.85, 10.5))
 plt.xticks(threads)
 
 for t in threads:
@@ -65,4 +65,4 @@ plt.title("Time used for each strategy per number of threads")
 
 plt.legend(loc='center right', bbox_to_anchor=(0.8, 0.5))
 
-plt.savefig('stats.png', bbox_inches='tight')
+plt.savefig('stats.pdf', bbox_inches='tight')
