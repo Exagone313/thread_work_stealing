@@ -2,3 +2,4 @@
 /test/*.serial*
 /test/*.lifo*
 /test/*.wsteal*
+/test/stats.png
